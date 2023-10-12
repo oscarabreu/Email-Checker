@@ -29,3 +29,12 @@ The program will provide information in the following format for each domain:
     spfRecord: The SPF record content, if present.
     hasDMARC: Indicates whether the domain has DMARC records (true/false).
     dmarcRecord: The DMARC record content, if present.
+
+## Credits
+
+This project was inspired by, and builds upon, code originally developed by educator @AkhilSharma90. While the original project served as a foundation, this version introduces several enhancements:
+
+- Concurrency: Implemented goroutines to process multiple domains concurrently.
+- Command-Line Flags: Added CL-Flags for better usability.
+- Improved Error-Handling: Enhanced error handling mechanism for better clarity and debugging.
+- Code Refactoring: Code has been restructured and optimized for better readability and efficiency.
