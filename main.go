@@ -9,69 +9,61 @@ import (
 	"strings"
 )
 
-// Entry point of the program.
 func main() {
-	// Create a new scanner to read from standard input.
+	
 	scanner := bufio.NewScanner(os.Stdin)
-	// Print column headers for the results.
 	fmt.Printf("domain, hasMX, hasSPF, sprRecord, hasDMARC, dmarcRecord\n")
 
-	// Iterate through every line of input and check the domain details.
 	for scanner.Scan() {
-		checkDomain(scanner.Text())
+		inspectDomain(scanner.Text())
 	}
 
-	// Handle any errors encountered while reading from the input.
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error: could not read from input: %v\n", err)
 	}
 }
 
-// Function to check the details of a domain.
-func checkDomain(domain string) {
-	// Variables to store the status and details of the domain.
-	var hasMX, hasSPF, hasDMARC bool
-	var spfRecord, dmarcRecord string
+func inspectDomain(targetDomain string) {
+	isMXPresent := validateMX(targetDomain)
+	isSPFPresent, detectedSPF := detectSPF(targetDomain)
+	isDMARCPresent, detectedDMARC := detectDMARC(targetDomain)
 
-	// Look up the MX records of the domain.
-	mxRecords, err := net.LookupMX(domain)
-	if err != nil {
-		log.Printf("Error: %v\n", err)
-	}
-	// Check if there are any MX records.
-	if len(mxRecords) > 0 {
-		hasMX = true
-	}
+	fmt.Printf("%v, %v, %v, %q, %v, %q\n", targetDomain, isMXPresent, isSPFPresent, detectedSPF, isDMARCPresent, detectedDMARC)
+}
 
-	// Look up the TXT records of the domain.
-	txtRecords, err := net.LookupTXT(domain)
-	if err != nil {
-		log.Printf("Error:%v\n", err)
+func validateMX(domainName string) bool {
+	mxEntries, mxErr := net.LookupMX(domainName)
+	if mxErr != nil {
+		log.Printf("MX Lookup Error: %v\n", mxErr)
+		return false
 	}
+	return len(mxEntries) > 0
+}
 
-	// Check for an SPF record in the domain's TXT records.
-	for _, record := range txtRecords {
-		if strings.HasPrefix(record, "v=spf1") {
-			hasSPF = true
-			spfRecord = record
-			break
+func detectSPF(domainName string) (bool, string) {
+	txtEntries, txtErr := net.LookupTXT(domainName)
+	if txtErr != nil {
+		log.Printf("TXT Lookup Error: %v\n", txtErr)
+		return false, ""
+	}
+	for _, entry := range txtEntries {
+		if strings.HasPrefix(entry, "v=spf1") {
+			return true, entry
 		}
 	}
+	return false, ""
+}
 
-	// Check for a DMARC record associated with the domain.
-	dmarcRecordList, err := net.LookupTXT("_dmarc." + domain)
-	if err != nil {
-		log.Printf("Error%v\n", err)
+func detectDMARC(domainName string) (bool, string) {
+	dmarcEntries, dmarcErr := net.LookupTXT("_dmarc." + domainName)
+	if dmarcErr != nil {
+		log.Printf("DMARC Lookup Error: %v\n", dmarcErr)
+		return false, ""
 	}
-	// Check for DMARC presence in the DMARC TXT records.
-	for _, record := range dmarcRecordList {
-		if strings.HasPrefix(record, "v=DMARC1") {
-			hasDMARC = true
-			dmarcRecord = record
-			break
+	for _, entry := range dmarcEntries {
+		if strings.HasPrefix(entry, "v=DMARC1") {
+			return true, entry
 		}
 	}
-
-	// Print the domain details.
-	fmt.Printf("%v %v %v %v %v %v", domain, hasMX, hasSPF, spfRecord, hasDMARC, dmarcRecord)
+	return false, ""
 }
