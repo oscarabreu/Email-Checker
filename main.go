@@ -30,12 +30,14 @@ func main() {
 	var numWorkers = runtime.NumCPU() // We use the number of CPUs as the number of workers
 
 	// I was advised to make an interesting decision made here & choosing the |jobs channel| =
-	// the number of workers/number of CPUs.Buffering the jobs channel to numWorkers size 
+	// the number of workers/number of CPUs. Buffering the jobs channel to numWorkers size 
 	// allows for smooth job dispatch. It lets you send multiple jobs without waiting, 
 	// optimizing flow between dispatching and processing. It strikes a balance between
 	//  memory use and avoiding excessive blocking in the main routine.
 	
 	jobs := make(chan string, numWorkers) // Buffered channel to send jobs to workers
+		
+	// We use an unbuffered channel for results because we want to process them as they come in.
 	results := make(chan string) // Buffered cannel to receive results from workers
 
 	// Loops through the number of workers and starts a goroutine for each.
