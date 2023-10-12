@@ -32,7 +32,7 @@ The program will provide information in the following format for each domain:
 
 ## Credits
 
-This project was inspired by, and builds upon, code originally developed by educator @AkhilSharma90. While the original project served as a foundation, this version introduces several enhancements:
+This project was inspired by, and builds upon, code originally developed by educator [AkhilSharma90](https://github.com/AkhilSharma90). While the original project served as a foundation, this version introduces several enhancements:
 
 - Concurrency: Implemented goroutines to process multiple domains concurrently.
 - Command-Line Flags: Added CL-Flags for better usability.
