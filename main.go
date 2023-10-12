@@ -11,10 +11,11 @@ import (
 	"sync"
 )
 
+// Constants for the SPF and DMARC record prefixes.
 const (
-	SPFRecordPrefix   = "v=spf1"
-	DMARCRecordPrefix = "v=DMARC1"
-	DMARCDomainPrefix = "_dmarc."
+	SPFRecordPrefix   = "v=spf1" //SPF Records start with "v=spf1"
+	DMARCRecordPrefix = "v=DMARC1" // DMARC Records start with "v=DMARC1"
+	DMARCDomainPrefix = "_dmarc." // DMARC Domains are prefixed with "_dmarc."
 )
 
 func main() {
@@ -24,31 +25,44 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Printf("domain, hasMX, hasSPF, spfRecord, hasDMARC, dmarcRecord\n")
 
-	var wg sync.WaitGroup
-	var numWorkers = runtime.NumCPU()
+	// We introduce concurrency to speed up the process
+	var wg sync.WaitGroup // WaitGroups help us wait for all goroutines to finish
+	var numWorkers = runtime.NumCPU() // We use the number of CPUs as the number of workers
 
-	jobs := make(chan string, numWorkers)
-	results := make(chan string)
+	// I was advised to make an interesting decision made here & choosing the |jobs channel| =
+	// the number of workers/number of CPUs.Buffering the jobs channel to numWorkers size 
+	// allows for smooth job dispatch. It lets you send multiple jobs without waiting, 
+	// optimizing flow between dispatching and processing. It strikes a balance between
+	//  memory use and avoiding excessive blocking in the main routine.
+	
+	jobs := make(chan string, numWorkers) // Buffered channel to send jobs to workers
+	results := make(chan string) // Buffered cannel to receive results from workers
 
+	// Loops through the number of workers and starts a goroutine for each.
 	for w := 0; w < numWorkers; w++ {
         go worker(jobs, results, &wg)
     }
 
+	// This allows for asynchronous processing of the results.
+	// The main program will not hang, each result is printed as it is received.
+	// Additionally, this anonymous function has access to all variables in the main function.
+	// So we don't need to pass anything in!
 	go func() {
         for r := range results {
             fmt.Print(r)
         }
     }()
 
+	// Scan each line of the input and send it to the jobs channel.
 	for scanner.Scan() {
-        domain := scanner.Text()
-        wg.Add(1)
-        jobs <- domain
+        domain := scanner.Text() // Read the domain from the input
+        wg.Add(1) // Increment the WaitGroup counter
+        jobs <- domain // Send the domain to the jobs channel
     }
 
-	close(jobs)
-    wg.Wait()
-    close(results)
+	close(jobs) // Close the jobs channel
+    wg.Wait() // Wait for all workers to finish
+    close(results) // Close the results channel
 
 	// Error handling
 	if err := scanner.Err(); err != nil {
@@ -56,13 +70,14 @@ func main() {
 	}
 
 }
+// worker is a function that takes a domain from the jobs channel, 
+// inspects it, and sends the result to the results channel
 func worker(jobs <-chan string, results chan<- string, wg *sync.WaitGroup) {
-    for domain := range jobs {
+for domain := range jobs {
         results <- inspectDomain(domain)
         wg.Done()
     }
 }
-
 
 // inspectDomain takes a domain name and prints a CSV line with the results
 func inspectDomain(domain string) string {
