@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -19,15 +21,65 @@ const (
 )
 
 func main() {
+	  // Define command-line flags
+	  var inputFile = flag.String("input", "", "Path to the input file containing domain names.")
+	  var outputFile = flag.String("output", "", "Path to the output file to write results.")
+	  var workerCount = flag.Int("workers", runtime.NumCPU(), "Number of concurrent workers for domain processing.")
+	  var logFile = flag.String("log", "", "Path to the log file. If not provided, logs will be printed to the console.")
+	  var verbose = flag.Bool("verbose", false, "Enable verbose logging.")
+	  flag.Parse()
+  
+	  // If logFile is provided, redirect logs there
+	  if *logFile != "" {
+		  f, err := os.OpenFile(*logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		  if err != nil {
+			  log.Fatalf("Error opening log file: %v\n", err)
+		  }
+		  defer f.Close()
+		  log.SetOutput(f)
+	  }
+  
+	  // Handle verbosity
+	  if !*verbose {
+		  log.SetOutput(io.Discard)
+	  }
+  
+	  var input io.Reader = os.Stdin
+	  var output io.Writer = os.Stdout
+  
+	  // If inputFile is provided, read from that file
+	  if *inputFile != "" {
+		  f, err := os.Open(*inputFile)
+		  if err != nil {
+			  log.Fatalf("Error opening input file: %v\n", err)
+		  }
+		  defer f.Close()
+		  input = f
+	  }
+  
+	  // If outputFile is provided, write to that file
+	  if *outputFile != "" {
+		  f, err := os.Create(*outputFile)
+		  if err != nil {
+			  log.Fatalf("Error opening output file: %v\n", err)
+		  }
+		  defer f.Close()
+		  output = f
+	  }
 	// We use a Scanner to buffer the input stream and read line by line
 	// This prevents loading the entire input into memory at once!
 	// However, if domain line is >64k, it will return false but this is rare (I hope!)
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(input)
 	fmt.Printf("domain, hasMX, hasSPF, spfRecord, hasDMARC, dmarcRecord\n")
 
 	// We introduce concurrency to speed up the process
 	var wg sync.WaitGroup // WaitGroups help us wait for all goroutines to finish
-	var numWorkers = runtime.NumCPU() // We use the number of CPUs as the number of workers
+	var numWorkers int
+	if *workerCount > 0 {
+    	numWorkers = *workerCount
+	} else {
+    numWorkers = runtime.NumCPU() // Default is to use the number of CPUs as the number of workers
+}
 
 	// I was advised to make an interesting decision made here & choosing the |jobs channel| =
 	// the number of workers/number of CPUs. Buffering the jobs channel to numWorkers size 
@@ -36,7 +88,7 @@ func main() {
 	//  memory use and avoiding excessive blocking in the main routine.
 	
 	jobs := make(chan string, numWorkers) // Buffered channel to send jobs to workers
-		
+
 	// We use an unbuffered channel for results because we want to process them as they come in.
 	results := make(chan string) // Buffered cannel to receive results from workers
 
@@ -51,7 +103,7 @@ func main() {
 	// So we don't need to pass anything in!
 	go func() {
         for r := range results {
-            fmt.Print(r)
+            fmt.Print(output, r)
         }
     }()
 
