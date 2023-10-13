@@ -1,4 +1,4 @@
-# Domain Details Checker
+# Email Domain Checker
 
 ## Overview
 
