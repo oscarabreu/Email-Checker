@@ -140,7 +140,7 @@ func inspectDomain(domain string) string {
 	isSPFPresent, detectedSPF := detectSPF(domain) // Checks if SPF records exist and returns the record
 	isDMARCPresent, detectedDMARC := detectDMARC(domain) // Checks if DMARC records exist and returns the record
 
-	return fmt.Sprintf("%v, %v, %v, %q, %v, %q\n", domain, isMXPresent, isSPFPresent, detectedSPF, isDMARCPresent, detectedDMARC)
+	return fmt.Sprintf("\nDomain: %v, \nisMXPresent: %v, \nisSPFPresent: %v, \nSPF: %q, \nisDMARCPresent: %v, \ndMARC: %q\n", domain, isMXPresent, isSPFPresent, detectedSPF, isDMARCPresent, detectedDMARC)
 }
 
 // Function to validate MX records using LookupMX from the net package.
