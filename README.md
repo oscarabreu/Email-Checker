@@ -2,20 +2,27 @@
 
 ## Overview
 
-This Go program allows you to check the details of domains, including MX (Mail Exchange), SPF (Sender Policy Framework), 
-and DMARC (Domain-based Message Authentication, Reporting, and Conformance) records. It reads domain names from standard 
-input, performs DNS lookups, and prints the results.
+The Domain Details Checker is a Go program that enables you to inspect various details of domains, including MX (Mail Exchange), SPF (Sender Policy Framework), and DMARC (Domain-based Message Authentication, Reporting, and Conformance) records. This tool reads domain names from standard input, performs DNS lookups, and presents the results in an easy-to-read format.
 
 ## Pre-Requisites
 
-You need Go installed on your system to run this program.
+Before using this program, ensure that you have Go installed on your system. You can download and install Go from the official website: https://golang.org/dl/
 
 ## Usage
+
 1. Clone or download the program's source code.
 2. Open a terminal and navigate to the directory containing the program.
 3. Compile the program using the following command:
   ```go build do`main_details_checker.go```
-4. Run the compiled program: ```./domain_details_checker```
+4. Run the compiled program: ```./domain_details_checker [flags]```
+```
+Available flags:
+    -input: Path to the input file containing domain names.
+    -output: Path to the output file to write results.
+    -workers: Number of concurrent workers for domain processing.
+    -log: Path to the log file. If not provided, logs will be printed to the console.
+    -verbose: Enable verbose logging.
+```
 5. Enter domain names one per line and press Enter. The program will check and display details for each domain.
 6. To stop the program, press **Ctrl+C.**
 
